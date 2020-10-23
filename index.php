@@ -7,22 +7,46 @@ if (isset($_GET['q'])) {
     $result = [];
     $q = $_GET['q'];
 
+    if (isset($_GET['pagingSize'])) {
+        $paging_size = $_GET['pagingSize'];
+    } else {
+        $paging_size = 10;
+    }
+
+    if (isset($_GET['pagingOffset'])) {
+        $paging_offset = $_GET['pagingOffset'];
+    } else {
+        $paging_offset = $paging_offset_link = 0;
+    }
+
+    $page = (integer)(($paging_offset + $paging_size) / $paging_size);
+    $paging_offset_link = (($page * $paging_size) - $paging_size);
+    $paging_size_array = [10, 20, 50];
+
     $params = [
-        'index' => 'articles',
+        'index' => 'text_container',
+        'from' => $paging_offset,
+        'size' => $paging_size,
         'body' => [
             'query' => [
                 'multi_match' => [
                     'query' => $q,
-                    'fuzziness' => 1 //wrong written char count
+                    'fuzziness' => 0 //wrong written char count
                 ]
             ]
         ]
     ];
+    $starttime = microtime(true);
 
     $query = $client->search($params);
 
+    $endtime = microtime(true);
+
     if ($query['hits']['total'] > 0) {
+        $result_text = '<div class="alert alert-primary" role="alert"><b>' . $query['hits']['total'] . '</b> sonuç bulundu. ( ' . substr($endtime - $starttime, 0, 5) . ' sn. )</div>';
+        $total_result = $query['hits']['total'];
         $result = $query['hits']['hits'];
+
         //echo '<pre>' , print_r($result), '</pre>';
     }
 }
@@ -51,106 +75,63 @@ if (isset($_GET['q'])) {
             </div>
         </div>
     </header>
+<?php
+if (isset($result_text)) {
+    echo $result_text;
+}
+if (isset($result) && is_array($result) && count($result) > 0) { ?>
     <div class="list-group">
-        <?php if (isset($result) && is_array($result) && count($result) > 0) {
-            foreach ($result as $row) {
-                ?>
-                <a href="javascript:void(0);" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1"><?php echo $row['_source']['title']; ?></h5>
-                        <small>3 days ago</small>
-                    </div>
-                    <p class="mb-1"><?php echo $row['_source']['body']; ?></p>
-                    <p>
-                        <?php if (isset($row['_source']['keywords']) && is_array($row['_source']['keywords']) && count($row['_source']['keywords']) > 0) { ?>
-                            <?php foreach ($row['_source']['keywords'] as $keyword) { ?>
-                                <span class="badge badge-info"><?php echo $keyword; ?></span>
-                            <?php } ?>
-                        <?php } ?>
-                    </p>
-                </a>
-                <?php
-            }
-        } else { ?>
-            <div class="alert alert-dark text-center" role="alert">
-                No data available.
-            </div>
-        <?php
-        }
-        ?>
+        <?php foreach ($result as $row) { ?>
+            <a href="detail.php?q=<?php echo $q; ?>&id=<?php echo $row['_id']; ?>"
+               class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1"><?php echo $row['_source']['title']; ?></h5>
+                    <small><?php echo $row['_source']['page_num']; ?>. sayfa</small>
+                </div>
+            </a>
+        <?php } ?>
     </div>
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            <?php
+            for ($p = 1; $p <= (integer)ceil($total_result / $paging_size); $p++) {
+                $paging_offset_link = (($p * $paging_size) - $paging_size);
+                if ($page == $p) { ?>
+                    <li class="page-item active">
+                        <a class="page-link" href="#"><?php echo $p; ?></a>
+                    </li>
+                    <?php
+                } else { ?>
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="index.php?q=<?php echo $q; ?>&pagingOffset=<?php echo $paging_offset_link; ?>&pagingSize=<?php echo $paging_size; ?>"><?php echo $p; ?></a>
+                    </li>
+                    <?php
+                }
+            }
+            ?>
+        </ul>
+    </nav>
+    Sayfada
+    <div class="btn-group" role="group" aria-label="Basic example">
+        <?php foreach ($paging_size_array as $page_size) { ?>
+            <?php if ($page_size == $paging_size) { ?>
+                <a class="btn btn-primary" href="#" role="button"><?php echo $page_size; ?></a>
+            <?php } else { ?>
+                <a class="btn btn-outline-primary"
+                   href="index.php?q=<?php echo $q; ?>&pagingOffset=<?php echo $paging_offset_link; ?>&pagingSize=<?php echo $page_size; ?>"
+                   role="button"><?php echo $page_size; ?></a>
+            <?php } ?>
+        <?php } ?>
+    </div>
+    sonuç göster
+    <?php
+} else { ?>
+    <div class="alert alert-dark text-center" role="alert">
+        No data available.
+    </div>
+<?php } ?>
 
-    <!-- Icons Grid -->
-    <section class="features-icons bg-light text-center">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4">
-                    <div class="features-icons-item mx-auto mb-5 mb-lg-0 mb-lg-3">
-                        <div class="features-icons-icon d-flex">
-                            <i class="icon-screen-desktop m-auto text-primary"></i>
-                        </div>
-                        <h3>Fully Responsive</h3>
-                        <p class="lead mb-0">This theme will look great on any device, no matter the size!</p>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="features-icons-item mx-auto mb-5 mb-lg-0 mb-lg-3">
-                        <div class="features-icons-icon d-flex">
-                            <i class="icon-layers m-auto text-primary"></i>
-                        </div>
-                        <h3>Bootstrap 4 Ready</h3>
-                        <p class="lead mb-0">Featuring the latest build of the new Bootstrap 4 framework!</p>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="features-icons-item mx-auto mb-0 mb-lg-3">
-                        <div class="features-icons-icon d-flex">
-                            <i class="icon-check m-auto text-primary"></i>
-                        </div>
-                        <h3>Easy to Use</h3>
-                        <p class="lead mb-0">Ready to use with your own content, or customize the source files!</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Image Showcases -->
-    <section class="showcase">
-        <div class="container-fluid p-0">
-            <div class="row no-gutters">
-
-                <div class="col-lg-6 order-lg-2 text-white showcase-img"
-                     style="background-image: url('img/bg-showcase-1.jpg');"></div>
-                <div class="col-lg-6 order-lg-1 my-auto showcase-text">
-                    <h2>Fully Responsive Design</h2>
-                    <p class="lead mb-0">When you use a theme created by Start Bootstrap, you know that the theme will
-                        look great on any device, whether it's a phone, tablet, or desktop the page will behave
-                        responsively!</p>
-                </div>
-            </div>
-            <div class="row no-gutters">
-                <div class="col-lg-6 text-white showcase-img"
-                     style="background-image: url('img/bg-showcase-2.jpg');"></div>
-                <div class="col-lg-6 my-auto showcase-text">
-                    <h2>Updated For Bootstrap 4</h2>
-                    <p class="lead mb-0">Newly improved, and full of great utility classes, Bootstrap 4 is leading the
-                        way in mobile responsive web development! All of the themes on Start Bootstrap are now using
-                        Bootstrap 4!</p>
-                </div>
-            </div>
-            <div class="row no-gutters">
-                <div class="col-lg-6 order-lg-2 text-white showcase-img"
-                     style="background-image: url('img/bg-showcase-3.jpg');"></div>
-                <div class="col-lg-6 order-lg-1 my-auto showcase-text">
-                    <h2>Easy to Use &amp; Customize</h2>
-                    <p class="lead mb-0">Landing Page is just HTML and CSS with a splash of SCSS for users who demand
-                        some deeper customization options. Out of the box, just add your content and images, and your
-                        new landing page will be ready to go!</p>
-                </div>
-            </div>
-        </div>
-    </section>
 <?php
 include "footer.php";
 ?>
