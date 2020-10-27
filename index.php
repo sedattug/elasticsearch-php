@@ -86,7 +86,7 @@ if (isset($result) && is_array($result) && count($result) > 0) { ?>
                class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1"><?php echo $row['_source']['title']; ?></h5>
-                    <small><?php echo $row['_source']['page_num']; ?>. sayfa</small>
+                    <small><a target="_blank" href="http://localhost:8888/#page=<?php echo $row['_source']['page_num']; ?>"><?php echo $row['_source']['page_num']; ?>. sayfa</a></small>
                 </div>
             </a>
         <?php } ?>

@@ -35,7 +35,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
             <p><?php echo str_replace($q, '<mark>' . $q . '</mark>', $result['page_content']);?></p>
             <h3 class="my-3">Project Details</h3>
             <ul>
-                <li>Sayfa Numarası : <?php echo $result['page_num'];?></li>
+                <li>Sayfa Numarası : <a target="_blank" href="http://localhost:8888/#page=<?php echo $result['page_num']; ?>"><?php echo $result['page_num']; ?></a></li>
             </ul>
         <?php } else {?>
                 <p>No data available.</p>
